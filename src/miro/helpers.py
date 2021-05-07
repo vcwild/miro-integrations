@@ -9,6 +9,21 @@ from miro.exceptions import (
 )
 
 def handle_json(response: Response) -> Dict:
+	"""Return a json object otherwise raises an error
+
+	Args:
+		response (Response): HTTP response object
+
+	Raises:
+		InvalidCredentialsException: Credentials are invalid (401)
+		InsufficientPermissions: User has insufficient permissions (403)
+		ObjectNotFoundException: The object was not found (404)
+		MiroException: Miro specific exceptions (5xx)
+		UnexpectedResponseException: For unexpected events raises unexpected response from server
+
+	Returns:
+		Dict: Dictionary object with the json response from the server
+	"""
 	if is_2xx_status_code(response.status_code):
 		return response.json()
 
