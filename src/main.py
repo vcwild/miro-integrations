@@ -1,12 +1,39 @@
-from pprint import pprint
+import httpx
 from miro.client import Client
-from env import (MIRO_AUTH_TOKEN, BOARD_ID, TEAM_ID)
+from env import (MIRO_AUTH_TOKEN, BOARD_ID, SLACK_WEBHOOK_URL)
+from miro.helpers import handle_json
+from services.users import get_user_activity
+import json
+
 
 client = Client(
-	"https://api.miro.com",
-	MIRO_AUTH_TOKEN,
+	base_url="https://api.miro.com",
+	auth_token=MIRO_AUTH_TOKEN,
 )
 
-# board = client.get_board_members(BOARD_ID)
+time_mins = 3000000
 
-board = client.list_all_team_members(TEAM_ID)
+
+user_activity = get_user_activity(
+	client=client,
+	board_id=BOARD_ID,
+	from_minutes=time_mins
+)
+
+assert user_activity != {}, "No user activity recorded"
+
+messages = ""
+
+for user, activities in user_activity.items():
+	message = "`{}` realizou `{}` atividades nos boards da Fractal nos últimos `{}` minutos."
+	message = message.format(user, activities, time_mins)
+	messages += "\n"
+	messages += message
+
+body = {
+	'text': messages
+}
+
+json_serialized = json.dumps(body)
+
+r = httpx.post(url=SLACK_WEBHOOK_URL, data=json_serialized, content="application/json")
