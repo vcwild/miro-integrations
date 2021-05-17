@@ -1,39 +1,50 @@
-import httpx
 from miro.client import Client
-from env import (MIRO_AUTH_TOKEN, BOARD_ID, SLACK_WEBHOOK_URL)
-from miro.helpers import handle_json
-from services.users import get_user_activity
-import json
+from env import (MIRO_AUTH_TOKEN, BOARD_ID)
+from services.users import get_user_activity, get_user_activity_by_widget_type
+from view.user_activity import show_user_activity
+from handlers.messages import post_message
 
+TIMER = 60
 
 client = Client(
 	base_url="https://api.miro.com",
 	auth_token=MIRO_AUTH_TOKEN,
 )
 
-time_mins = 3000000
+# ---- Routine 0
 
+board = client.list_all_widgets(BOARD_ID)
 
 user_activity = get_user_activity(
 	client=client,
 	board_id=BOARD_ID,
-	from_minutes=time_mins
+	from_minutes=TIMER,
 )
 
-assert user_activity != {}, "No user activity recorded"
+message = "`{}` realizou `{}` atividades nos boards nos últimos `{}` minutos."
 
-messages = ""
+body = show_user_activity(
+	user_activity=user_activity,
+	from_minutes=TIMER,
+	message=message
+)
 
-for user, activities in user_activity.items():
-	message = "`{}` realizou `{}` atividades nos boards da Fractal nos últimos `{}` minutos."
-	message = message.format(user, activities, time_mins)
-	messages += "\n"
-	messages += message
+response = post_message(body)
 
-body = {
-	'text': messages
-}
+# ---- Routine 1
 
-json_serialized = json.dumps(body)
+user_activity = get_user_activity_by_widget_type(
+	client=client,
+	board_id=BOARD_ID,
+	from_minutes=TIMER,
+)
 
-r = httpx.post(url=SLACK_WEBHOOK_URL, data=json_serialized, content="application/json")
+message = "`{}` criou `{}` post-its nos boards nos últimos `{}` minutos."
+
+body = show_user_activity(
+	user_activity=user_activity,
+	from_minutes=TIMER,
+	message=message
+)
+
+response = post_message(body)
