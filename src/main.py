@@ -5,13 +5,17 @@ from services.users import (
 	get_user_activity,
 	get_user_activity_by_widget_type,
 	get_user_data_with_text_fields,
+	get_user_data_with_links,
 	get_user_reports
 )
-from view.user_activity import (show_user_activity, show_user_reports)
+from view.user_activity import (
+	show_user_activity,
+	show_user_reports,
+)
 from handlers.messages import post_message
 from miro.client import Client
 
-TIMER = 3200
+TIMER = 120
 
 client = Client(
 	base_url="https://api.miro.com",
@@ -24,11 +28,17 @@ user_activity = get_user_data_with_text_fields(
 	from_minutes=TIMER
 )
 
+user_links = get_user_data_with_links(
+	client=client,
+	board_id=BOARD_ID,
+	from_minutes=TIMER
+)
+
 user_reports = get_user_reports(user_activity)
 
 body = show_user_reports(user_reports, TIMER)
 
-response = post_message(body)
+# response = post_message(body)
 
 # # ---- Routine 0
 
